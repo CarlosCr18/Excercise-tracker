@@ -44,13 +44,29 @@ app.post("/api/users", (req, res) => {
   res.send(responseObject);
 });
 
+app.get("/api/users", (req, res) => {
+  let userMap = [];
+  excerciesLog.find({}, (err, users) => {
+    if (err) return console.error(err, "error");
+    users.forEach((user) => {
+      let currentObject = { _id: user._id.valueOf(), username: user.userName };
+      userMap.push(currentObject);
+    });
+
+    res.send(userMap);
+  });
+});
+
 //Add user log excercise data
 app.post("/api/users/:_id/exercises", (req, res) => {
   let fullParams = req.body;
   let descriptionParam = fullParams.description;
   let durationParam = fullParams.duration;
-  console.log(fullParams.date, "PARAMS DATE");
-  let dateParam = new Date(fullParams.date.replace(/-/g, "/")).toDateString();
+
+  let dateParam =
+    fullParams.date != undefined || ""
+      ? new Date(fullParams.date.replace(/-/g, "/")).toDateString()
+      : new Date().toDateString();
   let currentUserId = req.params._id;
   let personRes = {
     _id: currentUserId,
@@ -59,6 +75,7 @@ app.post("/api/users/:_id/exercises", (req, res) => {
     duration: parseInt(durationParam),
     description: descriptionParam,
   };
+
   excerciesLog.find({ _id: currentUserId }, function (err, personFound) {
     if (err) return console.log(err);
     personFound[0].count = parseInt(personFound[0].count) + 1;
@@ -82,7 +99,11 @@ app.get("/api/users/:_id/logs", (req, res) => {
   let { from, to, limit } = req.query;
   let fromDate = new Date(from);
   let toDate = new Date(to);
+  console.log(req.params, "REQPARAMS");
+  console.log(req.query, "QUERY");
+  console.log(req.body, "BODY");
 
+  // console.log(req.query, "QUERY");
   excerciesLog.find({ _id: currentUserId }, (err, result) => {
     if (err) return console.log(err);
     let bFrom = true;
@@ -122,12 +143,13 @@ app.get("/api/users/:_id/logs", (req, res) => {
       filteredArray = filteredArray.splice(0, limit);
     }
     returnObject.count = filteredArray.length;
-    console.log(filteredArray);
+    // console.log(filteredArray);
     for (let i = 0; i < filteredArray.length; i++) {
       filteredArray[i].duration = parseInt(filteredArray[i].duration);
+      filteredArray[i].date = new Date(filteredArray[i].date).toDateString();
     }
-    returnObject.log = { ...filteredArray };
-
+    returnObject.log = [...filteredArray];
+    // console.log(returnObject);
     res.send(returnObject);
   });
 });
